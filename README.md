@@ -14,6 +14,9 @@ It caches requests to Reddit's JSON Api but it still operates fairly slowly when
 
 At the lowest level, each post has its `title`, `link`, `author`, and `self_text` (if it's a self post).
 
+### Is this a viable way to browse reddit?
+For a human being? No.
+
 ## Example Commands
 ```bash
 $ mkdir ~/redditfs
@@ -22,15 +25,15 @@ $ mount-redditfs ~/redditfs
 # list top subreddits
 $ ls ~/redditfs/r
 
-# list posts in r/askreddit
-$ ls ~/redditfs/r/askreddit
+# list posts in subreddit
+$ ls ~/redditfs/r/<some_subreddit>
 
 # list available data of a post
-$ ls ~/redditfs/r/<some_post>/
+$ ls ~/redditfs/r/<some_subreddit>/<some_post>/
 
 # get printable title of a post
-$ cat ~/redditfs/r/<some_post>/title
+$ cat ~/redditfs/r/<some_subreddit>/<some_post>/title
 
 # or the outgoing link?
-$ cat ~/redditfs/r/<some_post>/link
+$ cat ~/redditfs/r/<some_subreddit>/<some_post>/link
 ```
