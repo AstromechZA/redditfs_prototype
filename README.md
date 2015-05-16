@@ -22,6 +22,10 @@ For a human being? No.
 - `fuse` on ubuntu or `osxfuse` on OSX
 - Other dependencies are Python modules that will be installed upon `setup.py install`.
 
+### Is the code any good?
+- Some parts are good, overall it's pretty hacked together. (Hey it's a proof of concept!)
+- LRU Expiring Cache works well.
+
 ### What more could be done?
 
 - It only lists the top 25 posts of each subreddit, and by default lists only the top 25 subreddits since those are default
