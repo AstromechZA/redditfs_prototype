@@ -1,7 +1,7 @@
-__author__ = 'benmeier@fastmail.com'
-__date__ = '17 May 2015'
-
+import logging
 from datetime import datetime
+
+log = logging.getLogger(__name__)
 
 
 class LRUExpiringCache(object):
@@ -43,6 +43,7 @@ class LRUExpiringCache(object):
             self.head = n
             self.register[k] = n
             if len(self) > self.max_size:
+                log.debug('Cache full! %s/%s', len(self), len(self))
                 self._delete(self.tail)
             return n
 

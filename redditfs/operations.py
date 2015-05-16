@@ -2,6 +2,9 @@ import errno
 import os
 from collections import defaultdict
 from errno import ENOENT
+from redditfs.datasource import Datasource
+from redditfs.file_structure.folder import Folder
+from redditfs.file_structure.subreddit_folder import SubredditFolder
 from stat import S_IFDIR, S_IFLNK, S_IFREG
 from time import time
 
@@ -12,7 +15,7 @@ from redditfs.permission_maker import P, READ, WRITE, EXECUTE
 PERMISSION_SET_SAFE = P(user=(READ | WRITE | EXECUTE), group=(READ | EXECUTE), other=(READ | EXECUTE))
 
 # read only folders and files by default
-DEFAULT_PERMISSION = P(user=READ)
+DEFAULT_PERMISSION = P(user=READ, group=READ, other=READ)
 ACTIVE_UID = os.getuid()
 ACTIVE_GID = os.getgid()
 
@@ -20,111 +23,86 @@ ACTIVE_GID = os.getgid()
 class RedditOperations(Operations):
 
     def __init__(self):
-        self.files = {}
-        self.data = defaultdict(str)
-        self.fd = 0
-
-        now = time()
-        self.files['/'] = dict(st_mode=(S_IFDIR | DEFAULT_PERMISSION), st_ctime=now, st_mtime=now, st_atime=now, st_nlink=2)
+        self.file_descriptors = 0
+        self.datasource = Datasource()
+        self.root = Folder('')
+        self.root.add_folder(SubredditFolder('r', self.datasource))
+        self.root.add_folder(Folder('users'))
 
     def chmod(self, path, mode):
-        self.files[path]['st_mode'] &= 0770000
-        self.files[path]['st_mode'] |= mode
-        return 0
+        raise FuseOSError(errno.EACCES)
 
     def chown(self, path, uid, gid):
-        self.files[path]['st_uid'] = uid
-        self.files[path]['st_gid'] = gid
+        raise FuseOSError(errno.EACCES)
 
     def create(self, path, mode, **kwargs):
-        self.files[path] = dict(st_mode=(S_IFREG | mode), st_nlink=1,
-                                st_size=0, st_ctime=time(), st_mtime=time(),
-                                st_atime=time())
+        raise FuseOSError(errno.EACCES)
 
-        self.fd += 1
-        return self.fd
+    def _get_subnode(self, path):
+        if path == '/':
+            parts = []
+        else:
+            parts = path.split('/')[1:]
+
+        n = self.root
+        for part in parts:
+            if part in n:
+                n = n[part]
+            else:
+                raise FuseOSError(ENOENT)
+        return n
 
     def getattr(self, path, fh=None):
-        if path not in self.files:
-            raise FuseOSError(ENOENT)
-
-        return self.files[path]
+        return self._get_subnode(path).get_attrs()
 
     def getxattr(self, path, name, position=0):
-        attrs = self.files[path].get('attrs', {})
-
-        try:
-            return attrs[name]
-        except KeyError:
-            return ''       # Should return ENOATTR
+        return ''       # Should return ENOATTR
 
     def listxattr(self, path):
-        attrs = self.files[path].get('attrs', {})
-        return attrs.keys()
+        return []
 
     def mkdir(self, path, mode):
-        self.files[path] = dict(st_mode=(S_IFDIR | mode), st_nlink=2,
-                                st_size=0, st_ctime=time(), st_mtime=time(),
-                                st_atime=time())
-
-        self.files['/']['st_nlink'] += 1
+        raise FuseOSError(errno.EACCES)
 
     def open(self, path, flags):
-        self.fd += 1
-        return self.fd
+        self.file_descriptors += 1
+        return self.file_descriptors
 
     def read(self, path, size, offset, fh):
-        return self.data[path][offset:offset + size]
+        return ''  # self.data[path][offset:offset + size]
 
     def readdir(self, path, fh):
-        return ['.', '..'] + [x[1:] for x in self.files if x != '/']
+        return self._get_subnode(path).list()
 
     def readlink(self, path):
-        return self.data[path]
+        return ''  # self.data[path]
 
     def removexattr(self, path, name):
-        attrs = self.files[path].get('attrs', {})
-
-        try:
-            del attrs[name]
-        except KeyError:
-            pass        # Should return ENOATTR
+        raise FuseOSError(errno.EACCES)
 
     def rename(self, old, new):
-        self.files[new] = self.files.pop(old)
+        raise FuseOSError(errno.EACCES)
 
     def rmdir(self, path):
-        self.files.pop(path)
-        self.files['/']['st_nlink'] -= 1
+        raise FuseOSError(errno.EACCES)
 
     def setxattr(self, path, name, value, options, position=0):
-        # Ignore options
-        attrs = self.files[path].setdefault('attrs', {})
-        attrs[name] = value
+        raise FuseOSError(errno.EACCES)
 
     def statfs(self, path):
         return dict(f_bsize=512, f_blocks=4096, f_bavail=2048)
 
     def symlink(self, target, source):
-        self.files[target] = dict(st_mode=(S_IFLNK | 0777), st_nlink=1,
-                                  st_size=len(source))
-
-        self.data[target] = source
+        raise FuseOSError(errno.EACCES)
 
     def truncate(self, path, length, fh=None):
-        self.data[path] = self.data[path][:length]
-        self.files[path]['st_size'] = length
+        raise FuseOSError(errno.EACCES)
 
     def unlink(self, path):
-        self.files.pop(path)
+        raise FuseOSError(errno.EACCES)
 
     def utimens(self, path, times=None):
-        now = time()
-        atime, mtime = times if times else (now, now)
-        self.files[path]['st_atime'] = atime
-        self.files[path]['st_mtime'] = mtime
+        raise FuseOSError(errno.EACCES)
 
     def write(self, path, data, offset, fh):
-        self.data[path] = self.data[path][:offset] + data
-        self.files[path]['st_size'] = len(self.data[path])
-        return len(data)
+        raise FuseOSError(errno.EACCES)

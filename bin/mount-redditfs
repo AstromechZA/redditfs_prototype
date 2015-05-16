@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 import argparse
-
+import logging
 from fuse import FUSE
 
 from redditfs.operations import RedditOperations
@@ -12,6 +12,12 @@ def main():
     parser.add_argument('mount_point', help='the directory to mount the virtual reddit file system into.')
     parser.add_argument('-f', '--foreground', action='store_true', help='keep the mount open in the foreground.')
     args = parser.parse_args()
+
+    root_logger = logging.getLogger('')
+    root_logger.setLevel(logging.DEBUG)
+    h = logging.StreamHandler()
+    h.setLevel(logging.DEBUG)
+    root_logger.addHandler(h)
 
     FUSE(RedditOperations(), args.mount_point, foreground=args.foreground)
 

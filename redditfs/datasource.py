@@ -10,7 +10,7 @@ REDDIT_ENDPOINT = 'http://api.reddit.com/'
 class Datasource(object):
 
     def __init__(self):
-        self.cache = LRUExpiringCache(size=50, expire_timeout_seconds=60)
+        self.cache = LRUExpiringCache(size=200, expire_timeout_seconds=60)
         self.user_agent = utils.make_user_agent()
 
     def get_json(self, url):
@@ -29,7 +29,7 @@ class Datasource(object):
         return self.get_json(REDDIT_ENDPOINT + os.path.join(*path_elements))
 
     def get_subreddits(self):
-        return self.get_reddit_api_json('subreddits', 'popular')
+        return self.get_reddit_api_json('subreddits')
 
     def get_listing_for_subreddit(self, subreddit):
         return self.get_reddit_api_json('r', subreddit)

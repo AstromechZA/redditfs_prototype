@@ -5,6 +5,6 @@ NONE = 0x0
 
 
 def permission(user=0, group=0, other=0):
-    return ((user * 16) + group) * 16 + other
+    return ((user * 8) + group) * 8 + other
 
 P = permission
