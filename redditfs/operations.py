@@ -2,7 +2,7 @@ import errno
 import logging
 from redditfs.datasource import Datasource
 from redditfs.file_structure.folder import Folder
-from redditfs.file_structure.subreddit_folder import SubredditFolder
+from redditfs.file_structure.reddit_folders import SubredditFolder
 
 from fuse import Operations, FuseOSError
 

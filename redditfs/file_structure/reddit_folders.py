@@ -1,7 +1,10 @@
+import logging
 from redditfs.file_structure.folder import Folder
 from redditfs.utils import create_filename, ACTIVE_UID, ACTIVE_GID
 from time import time
 from stat import S_IFREG
+
+log = logging.getLogger(__name__)
 
 
 class SubredditFolder(Folder):
@@ -9,7 +12,7 @@ class SubredditFolder(Folder):
     def __init__(self, name, datasource):
         super(SubredditFolder, self).__init__(name)
         self.datasource = datasource
-        self.subreddits = dict()
+        self.subreddits = set()
 
     def add_folder(self, f):
         raise TypeError('Cannot add folders to a dynamic folder')
@@ -18,33 +21,40 @@ class SubredditFolder(Folder):
         raise TypeError('Cannot add files to a dynamic folder')
 
     def refresh(self):
-        self.subreddits = dict()
+        log.debug('refresh')
         data = self.datasource.get_subreddits()
         for i in data['data']['children']:
-            self.subreddits[i['data']['display_name']] = i['data']
+            self.subreddits.add(i['data']['display_name'])
+
+    def fetch_subreddit(self, name):
+        self.subreddits.add(name.strip())
 
     def list(self):
         self.refresh()
-        return ['.', '..'] + self.subreddits.keys()
+        return ['.', '..'] + list(self.subreddits)
 
     def __iter__(self):
-        return self.subreddits.keys().__iter__()
+        return self.subreddits.__iter__()
 
     def __getitem__(self, name):
-        self.refresh()
-        return SubredditListingFolder(self.subreddits[name], self.datasource)
+        log.debug('GET %s', name)
+        return SubredditListingFolder(name, self.datasource)
 
     def __contains__(self, name):
-        self.refresh()
-        return name in self.subreddits
+        log.debug('CONTAINS %s', name)
+        if self.datasource.is_a_subreddit(name):
+            self.subreddits.add(name)
+            self.refresh()
+            return name in self.subreddits
+        else:
+            return False
 
 
 class SubredditListingFolder(Folder):
 
-    def __init__(self, data, datasource):
-        super(SubredditListingFolder, self).__init__(data['display_name'])
+    def __init__(self, name, datasource):
+        super(SubredditListingFolder, self).__init__(name)
         self.datasource = datasource
-        self.data = data
         self.listing = dict()
 
     def add_folder(self, f):
@@ -55,7 +65,7 @@ class SubredditListingFolder(Folder):
 
     def refresh(self):
         self.listing = dict()
-        data = self.datasource.get_listing_for_subreddit(self.data['display_name'])
+        data = self.datasource.get_listing_for_subreddit(self.name)
         for i in data['data']['children']:
             f = RedditPostFolder(i['data'], self.datasource)
             self.listing[f.name] = f

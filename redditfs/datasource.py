@@ -33,3 +33,6 @@ class Datasource(object):
 
     def get_listing_for_subreddit(self, subreddit):
         return self.get_reddit_api_json('r', subreddit)
+
+    def is_a_subreddit(self, subreddit):
+        return self.get_reddit_api_json('r', subreddit, 'about')['kind'] == 't5'
