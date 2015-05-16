@@ -37,15 +37,17 @@ class SubredditFolder(Folder):
         return self.subreddits.__iter__()
 
     def __getitem__(self, name):
-        log.debug('GET %s', name)
+        log.debug('GET %r', name)
+        self.refresh()
         return SubredditListingFolder(name, self.datasource)
 
     def __contains__(self, name):
-        log.debug('CONTAINS %s', name)
+        log.debug('CONTAINS %r', name)
+        if name in self.subreddits:
+            return True
         if self.datasource.is_a_subreddit(name):
             self.subreddits.add(name)
-            self.refresh()
-            return name in self.subreddits
+            return True
         else:
             return False
 
@@ -98,6 +100,7 @@ class RedditPostFolder(Folder):
         self.data = data
 
         super(RedditPostFolder, self).add_file(ContentFile('link',  self.data['url'].encode('utf-8')))
+        super(RedditPostFolder, self).add_file(ContentFile('created',  str(self.data['created'])))
         super(RedditPostFolder, self).add_file(ContentFile('title', self.data['title'].encode('utf-8')))
         super(RedditPostFolder, self).add_file(ContentFile('author', self.data['author'].encode('utf-8')))
         super(RedditPostFolder, self).add_file(ContentFile('self_text', self.data.get('self_text', '').encode('utf-8')))
