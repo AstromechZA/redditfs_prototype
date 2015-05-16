@@ -1,23 +1,12 @@
 import errno
-import os
-from collections import defaultdict
-from errno import ENOENT
+import logging
 from redditfs.datasource import Datasource
 from redditfs.file_structure.folder import Folder
 from redditfs.file_structure.subreddit_folder import SubredditFolder
-from stat import S_IFDIR, S_IFLNK, S_IFREG
-from time import time
 
 from fuse import Operations, FuseOSError
 
-from redditfs.permission_maker import P, READ, WRITE, EXECUTE
-
-PERMISSION_SET_SAFE = P(user=(READ | WRITE | EXECUTE), group=(READ | EXECUTE), other=(READ | EXECUTE))
-
-# read only folders and files by default
-DEFAULT_PERMISSION = P(user=READ, group=READ, other=READ)
-ACTIVE_UID = os.getuid()
-ACTIVE_GID = os.getgid()
+log = logging.getLogger(__name__)
 
 
 class RedditOperations(Operations):
@@ -49,14 +38,14 @@ class RedditOperations(Operations):
             if part in n:
                 n = n[part]
             else:
-                raise FuseOSError(ENOENT)
+                raise FuseOSError(errno.ENOENT)
         return n
 
     def getattr(self, path, fh=None):
         return self._get_subnode(path).get_attrs()
 
     def getxattr(self, path, name, position=0):
-        return ''       # Should return ENOATTR
+        return ''
 
     def listxattr(self, path):
         return []
@@ -69,13 +58,13 @@ class RedditOperations(Operations):
         return self.file_descriptors
 
     def read(self, path, size, offset, fh):
-        return ''  # self.data[path][offset:offset + size]
+        return self._get_subnode(path).content[offset:(offset + size)]
 
     def readdir(self, path, fh):
         return self._get_subnode(path).list()
 
     def readlink(self, path):
-        return ''  # self.data[path]
+        return self._get_subnode(path).content
 
     def removexattr(self, path, name):
         raise FuseOSError(errno.EACCES)

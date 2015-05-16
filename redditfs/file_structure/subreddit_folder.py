@@ -1,5 +1,7 @@
 from redditfs.file_structure.folder import Folder
-from redditfs.utils import create_filename
+from redditfs.utils import create_filename, ACTIVE_UID, ACTIVE_GID
+from time import time
+from stat import S_IFREG
 
 
 class SubredditFolder(Folder):
@@ -85,9 +87,10 @@ class RedditPostFolder(Folder):
         self.datasource = datasource
         self.data = data
 
-        super(RedditPostFolder, self).add_folder(Folder('link'))
-        super(RedditPostFolder, self).add_folder(Folder('content'))
-        super(RedditPostFolder, self).add_folder(Folder('image'))
+        super(RedditPostFolder, self).add_file(ContentFile('link',  self.data['url'].encode('utf-8')))
+        super(RedditPostFolder, self).add_file(ContentFile('title', self.data['title'].encode('utf-8')))
+        super(RedditPostFolder, self).add_file(ContentFile('author', self.data['author'].encode('utf-8')))
+        super(RedditPostFolder, self).add_file(ContentFile('self_text', self.data.get('self_text', '').encode('utf-8')))
 
     def add_folder(self, f):
         raise TypeError('Cannot add folders to a dynamic folder')
@@ -95,3 +98,21 @@ class RedditPostFolder(Folder):
     def add_file(self, f):
         raise TypeError('Cannot add files to a dynamic folder')
 
+
+class ContentFile(object):
+
+    def __init__(self, name, content):
+        self.name = name
+        self.content = content
+
+    def get_attrs(self):
+        return dict(
+            st_mode=(S_IFREG | 0400),
+            st_nlink=1,
+            st_size=len(self.content),
+            st_ctime=time(),
+            st_mtime=time(),
+            st_atime=time(),
+            st_uid=ACTIVE_UID,
+            st_gid=ACTIVE_GID
+        )
