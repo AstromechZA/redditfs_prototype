@@ -1,0 +1,7 @@
+redditfs/
+redditfs/subreddits/
+redditfs/subreddits/<some_subreddit>
+redditfs/subreddits/<some_subreddit>/<some_post>/link
+                                                /content
+                                                /image
+                                                /comments
